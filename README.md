@@ -11,6 +11,7 @@ December 7th UPDATE:
 4)  The AskMeSystem struct has been adapted into a CLASS in order to obey OOP principles, such as encapsulation and abstraction.  At the time of writing, the struct has been converted, and tentative .h and .cpp files have been written.  I want to change a few other things before making separate files for these things 
 
 IMMEDIATE FUTURE PLANS:
-Change the run() function within AskFM
-Change the STRUCTS into CLASSES, so that the code follows basic OOP principles
-Improve error handling in all aspects of the code
+1) Change the run() function within AskFM (specific)
+2) Eliminate the using namespace std; (specific)
+3) Change the STRUCTS into CLASSES, so that the code follows basic OOP principles
+4) Improve error handling in all aspects of the code
