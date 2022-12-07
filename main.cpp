@@ -666,7 +666,10 @@ void AskMeSystem::run() {
 	LoadDatabase();
 	userManager.AccessSystem();
 	questionManager.FillUserQuestions(userManager.current_user);
-	while (true) {
+
+	//A clear exit condition has been set up for the loop
+	bool exit = false;
+	while (!exit) {
 	//This is used to show the menu options and read user input
 	const int possibilities = 8;
 	int choice = OptionsMenu(possibilities, "Print Questions To User", "Print Questions From User",
@@ -695,10 +698,10 @@ void AskMeSystem::run() {
 		userManager.ListUsersNamesIds();
 	else if (choice == 7)
 		questionManager.ListFeed();
+		//If the user chooses the eighth option, set the exit condition to true
 	else
-		break;
+		exit = true;
 	}
-	run();  // Restart again
 }
 */
 
