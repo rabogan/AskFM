@@ -1,8 +1,6 @@
 # AskFM
-7th December 2022
-I hope to be legally able to work in the USA soon: and just wait confirmation from USCIS
-
 This project is adapting my previous AskFM project (learned from when I didn't use pointers, OOP, or even error handling, and aims to improve it!
+The code is adapted from Mostafa Saad Ibrahim's code.  However, unlike the previous project, this makes SIGNIFICANT improvements to certain aspects, such as the ability to handle errors, user-friendliness, and conformity with OOP principles (I appreciate YMMV on the latter point!)
 
 December 7th UPDATE:
 1)  The variable names are improved
