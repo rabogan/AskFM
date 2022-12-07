@@ -27,7 +27,7 @@ which can help to make the code more modular, flexible, and maintainable.
 */
 
 #include "AskMeSystem.h"
-#include "UtilityFunctions.h"
+#include "UtilityFunction.h"
 
 void AskMeSystem::LoadDatabase(bool fill_user_questions) {
 	userManager.LoadDatabase();
