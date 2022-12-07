@@ -6,6 +6,11 @@
 #include <sstream>
 #include <iostream>
 #include <assert.h>
+
+//New additions
+#include "AskMeSystem.h"
+#include "UtilityFunction.h"
+
 using namespace std;  //I WILL COMPLETELY GET RID OF THIS!
 /////////////////////////////// UTILITY FUNCTIONS ///////////////////////////////
 vector<string> ReadFileLines(string path) {
@@ -68,10 +73,6 @@ int ToInt(string str) {
 
 	return num;
 }
-
-//DECLARED HERE, DEFINED below/in main()!
-int readInteger(int low, int high);
-int optionsMenu(const int num_options, ...);
 //////////////////////////////////////////////////////////////
 
 struct Question {
@@ -537,278 +538,17 @@ struct UserManager {
 		WriteFileLines("users.txt", lines);
 	}
 };
-/*
-The updated AskMeSystem class conforms to the principles of OOP
-Some key OOP principles that are evident in the updated code include:
-
-1)  Encapsulation: 
-The updated AskMeSystem class uses private member variables (UserManager userManager and QuestionManager questionManager)
-to encapsulate the data and implementation details of the class.
-It also provides public member functions (LoadDatabase, run, etc...) 
-to allow users of the class to interact with it in a controlled and predictable manner.
-This helps to protect the internal data
-and logic of the class from being directly accessed or modified by external code, 
-and ensures that the class can be usedand maintained in a modular and flexible way
-
-2)
-Inheritance : The updated AskMeSystem class is derived from the class keyword, 
-which means that it is a new class that is derived(or inherited) from the base class type.
-This allows the updated AskMeSystem class to inherit the basic properties
-and functionality of the class type, and to extend or override those properties and functions as needed to implement its own unique behavior and functionality
-
-3)
-Polymorphism : The updated AskMeSystem class uses function overloading
-For example, the LoadDatabase function has two different implementations, 
-depending on whether the fill_user_questions argument is provided or not to achieve polymorphism.
-This means that the LoadDatabase function can be called with different arguments, 
-and the appropriate implementation will be chosen based on the arguments provided.
-This allows the LoadDatabase function to behave differently depending on the context in which it is called, 
-and enables the AskMeSystem class to provide a more versatile and adaptable interface to its users.
-
-Overall, the updated AskMeSystem class demonstrates several key principles of OOP, 
-which can help to make the code more modular, flexible, and maintainable.
-*/
-class AskMeSystem {
-private:
-	UserManager userManager;
-	QuestionManager questionManager;
-public:
-	void LoadDatabase(bool fill_user_questions = false) {
-		userManager.LoadDatabase();
-		questionManager.LoadDatabase();
-
-		if (fill_user_questions)	// first time, waiting for login
-			questionManager.FillUserQuestions(userManager.current_user);
-	}
-
-	void run() {
-		LoadDatabase();
-		userManager.AccessSystem();
-		questionManager.FillUserQuestions(userManager.current_user);
-
-		while (true) {
-			//This is used to show the menu options and read user input
-			const int possibilities = 8;
-			int choice = OptionsMenu(possibilities, "Print Questions To User", "Print Questions From User", 
-			"Answer Question", "Delete Question", "Ask Question", "Print System Users", "List Feed", "Log Out");
-			LoadDatabase(true);
-
-			if (choice == 1)
-				questionManager.PrintUserToQuestions(userManager.current_user);
-			else if (choice == 2)
-				questionManager.PrintUserFromQuestions(userManager.current_user);
-			else if (choice == 3) {
-				questionManager.AnswerQuestion(userManager.current_user);
-				questionManager.UpdateDatabase();
-			} else if (choice == 4) {
-				questionManager.DeleteQuestion(userManager.current_user);
-				// Let's build again (just easier, but slow)
-				questionManager.FillUserQuestions(userManager.current_user);
-				questionManager.UpdateDatabase();
-			} else if (choice == 5) {
-				pair<int, int> to_user_pair = userManager.ReadUserId();
-				if (to_user_pair.first != -1) {
-					questionManager.AskQuestion(userManager.current_user, to_user_pair);
-					questionManager.UpdateDatabase();
-				}
-			} else if (choice == 6)
-				userManager.ListUsersNamesIds();
-			else if (choice == 7)
-				questionManager.ListFeed();
-			else
-				break;
-		}
-		run();	// Restart again
-	}
-};
 
 /*
-SPLITTING THE AskMeSystem INTO.hand .cpp FILES :
-The header file "AskMeSystem.h" declares the class, and its public methods.
-The implementation of these methods is provided in "AskMeSystem.cpp" file
-Don't forget to include #include "AskMeSystem.h" in main()
-*/
-
-/*
-*FIRST UP, HEADER 
-#ifndef ASKME_SYSTEM_H
-#define ASKME_SYSTEM_H
-#include "UserManager.h"
-#include "QuestionManager.h"
-
-class AskMeSystem {
-private:
-	UserManager userManager;
-	QuestionManager questionManager;
-
-public:
-	// Loads user and question data from the database
-	void LoadDatabase(bool fill_user_questions = false);
-
-	// Executes the main program loop that handles user input
-	void run();
-};
-
-#endif // ASKME_SYSTEM_H
-*/
-//.cpp
-/*
-#include "AskMeSystem.h"
-
-void AskMeSystem::LoadDatabase(bool fill_user_questions) {
-	userManager.LoadDatabase();
-	questionManager.LoadDatabase();
-	if (fill_user_questions)  // first time, waiting for login
-		questionManager.FillUserQuestions(userManager.current_user);
-}
-
-void AskMeSystem::run() {
-	LoadDatabase();
-	userManager.AccessSystem();
-	questionManager.FillUserQuestions(userManager.current_user);
-
-	//A clear exit condition has been set up for the loop
-	bool exit = false;
-	while (!exit) {
-	//This is used to show the menu options and read user input
-	const int possibilities = 8;
-	int choice = OptionsMenu(possibilities, "Print Questions To User", "Print Questions From User",
-	"Answer Question", "Delete Question", "Ask Question", "Print System Users", "List Feed", "Log Out");
-	LoadDatabase(true);
-
-	if (choice == 1)
-		questionManager.PrintUserToQuestions(userManager.current_user);
-	else if (choice == 2)
-		questionManager.PrintUserFromQuestions(userManager.current_user);
-	else if (choice == 3) {
-		questionManager.AnswerQuestion(userManager.current_user);
-		questionManager.UpdateDatabase();
-	} else if (choice == 4) {
-		questionManager.DeleteQuestion(userManager.current_user);
-		// Let's build again (just easier, but slow)
-		questionManager.FillUserQuestions(userManager.current_user);
-		questionManager.UpdateDatabase();
-	} else if (choice == 5) {
-		pair<int, int> to_user_pair = userManager.ReadUserId();
-		if (to_user_pair.first != -1) {
-			questionManager.AskQuestion(userManager.current_user, to_user_pair);
-			questionManager.UpdateDatabase();
-		}
-	} else if (choice == 6)
-		userManager.ListUsersNamesIds();
-	else if (choice == 7)
-		questionManager.ListFeed();
-		//If the user chooses the eighth option, set the exit condition to true
-	else
-		exit = true;
-	}
-}
-*/
-
-
-/*
-The eventual plan is to convert this into a main() with the standalone functions (declared, then defined)
-I may eventually convert it into a main with a Utility class, if need be!
+This part of the main.cpp function will end up being pretty all that is left
+The helper functions at the top will eventually all end up in the UtilityFunction.h/cpp files
+At this point, optionsMenu and readInteger are already in there
 */
 int main() {
 	AskMeSystem service;
 	service.run();
 
 	return 0;
-}
-
-/*
-This function was improved by using declaration/definition, as well as:
-1) HANDLING INVALID INPUT!!
-Using the std::cin object's fail() method to check if the input value is a valid integer
-If it is not a valid integer, the function clears the error state, and ignores remaining input
-It shows an error message to the user, and prompts them to enter a valid integer.
-This allows the ReadInt function  to handle invalid input values in a graceful manner
-2) PROMPTING THE USER FOR INPUT IN A USER-FRIENDLY MANNER
-I included the range in the error message, so that it's user-friendly
-3) Crucially, it includes a maximum of THREE attempts, so that the user doesn't get stuck or frustrated with the process
-*/
-int readInteger(int low, int high) {
-	const int maxAttempts = 3;
-	cout << "\nEnter number in range " << low << " - " << high << ": ";
-	int value;
-
-	for (int i = 0; i < maxAttempts; i++) {
-
-		cin >> value;
-
-		//Check if the input value is a valid integer
-		if (cin.fail())
-		{
-			//Clear error state and ignore remaining input
-			cin.clear();
-			//Used to clear the input stream and ignore any remaining input after an error is encountered
-			cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');  
-
-			//Show error message and prompt the user for an integer!
-			cout << "Error:  invalid input.  Please enter a valid integer in the specified range " << low << "-" << high << '\n'
-				continue;  //Continue is used to avoid repetition
-		}
-		if (low <= value && value <= high)
-			return value;
-
-		//Show the error messages and prompts the user again for an integet in the correct range
-		cout << "ERROR: invalid number.  Please enter a number in the specified range " << low << '-' << high << '\n';
-	}
-	//Maximum number of attempts reached
-	cout << "ERROR: maximum number of attempts reached, input cancelled...\n";
-	return -1;
-}
-
-/*
-Again, declaration and definition has been used.  The new optionsMenu function uses a do-while loop to read and validate user input.
-The loop continues until a valid input value is input.
-If -1 is  returned (see above), then an error message is displayed, and the user prompted again
-The key for this function is to ensure that optionsMenu always returns a valid input value,
-and that invalid input values are handled in a graceful way
-IMPROVEMENTS:
-1)  This update avoids using a vector of menu options as the argument - creating/populating the vector can be cumbersome
-2)  This takes the number of menu options as the first argument, followed by individual menu options as additional arguments
-This allows the caller to provide the menu options as separate arguments, without need to create/populate a vector first
-3)  This uses a 'va_list' object to hold menu options.  It allows the function to handle a variable number of arguments, and
-to access individual menu options as needed
-4)  The original optionsMenu function didn't validate the user's input.  If the user enters an invalid input value
-(i.e. a value not in the correct range), then the invalid value it returned, and the caller will handle the error
-5)  A do-while loop reads user input - and validates it. If an invalid input value if entered, we get an error message
-This ENSURE the function only returns a valid input value, which can then be used to determine which action to perform in the main program
-Overall, this is more flexible, easier to use, and better at handling input values than the original version
-*/
-int optionsMenu(const int num_options, ...) {
-	//Created a va_list object to hold the menu options
-	va_list options;
-	//Initializes the va_list object to hold the menu options
-	va_start(options, nums_options);
-	//Show the menu options to the user
-	cout << "\nMenu:\n";
-	for (int i = 0; i < num_options; i++) {
-		//Get the next menu option from the va_list object
-		const char* option = va_arg(options, const char*);
-		//Print the menu option to the console
-		cout << "\t" << i + 1 << ": " << option << '\n';
-	}
-	//Clean up the va_list object
-	va_end(options);
-
-	//Read the user input and validate it
-	int choice;
-	do {
-		//Read the user's input
-		choice = readInteger(1, num_options);
-
-		//Check if the input is valid
-		if (choice == -1) {
-			//Show error message and prompt the user again
-			cout << "ERROR: Invalid input.  Please select a valid menu option.\n";
-		}
-	} while (choice == -1);
-
-	//Return the valid input value
-	return choice;
 }
 
 /*
