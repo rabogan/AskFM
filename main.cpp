@@ -4,10 +4,10 @@
 #include <sstream>
 #include <iostream>
 #include <assert.h>
+#include <stdarg.h> 
 
 //Major update: the reliance on using namespace std; has been completed removed from the system!
 
-/////////////////////////////// UTILITY FUNCTIONS ///////////////////////////////
 std::vector<std::string>readFileLines(std::string path) {
 	std::vector<std::string>lines;
 	std::fstream fileHandler(path.c_str());
@@ -210,7 +210,7 @@ struct QuestionManager {
 		questionIDQuestionThreadMap.clear();
 		questionIDQuestionObjectMap.clear();
 
-		std::vector<std::string> lines = readFileLines("questions.txt");
+		std::vector<std::string> lines = readFileLines("");
 		for (auto& line : lines) {
 			Question question(line);
 			lastID = std::max(lastID, question.questionID);
@@ -426,11 +426,11 @@ struct UserManager {
 		lastID = 0;
 	}
 
-	void LoadDatabase() {
+	void loadDatabase() {
 		lastID = 0;
 		usernameUserObjectMap.clear();
 
-		std::vector<std::string>lines = readFileLines("users.txt");
+		std::vector<std::string>lines = readFileLines("");
 		for (auto& line : lines) {
 			User user(line);
 			usernameUserObjectMap[user.username] = user;
@@ -440,38 +440,38 @@ struct UserManager {
 
 	void accessSystem() {
 		const int possibilities = 2;
-		int choice = optionsMenu(possibilities, { "Login", "Sign Up" });
+		int choice = optionsMenu(possibilities,"Login", "Sign Up");
 		if (choice == 1)
-			DoLogin();
+			doLogin();
 		else
-			DoSignUp();
+			doSignUp();
 	}
 
-	void DoLogin() {
-		LoadDatabase();	// in case user added from other parallel run
+	void doLogin() {
+		loadDatabase();	// in case user added from other parallel run
 
 		while (true) {
-			std::cout << "Enter user name & password: ";
+			std::cout << "Enter username & password: ";
 			std::cin >> currentUser.username >> currentUser.password;
 
 			if (!usernameUserObjectMap.count(currentUser.username)) {
 				std::cout << "\nInvalid user name or password. Try again\n\n";
 				continue;
 			}
-			User user_exist = usernameUserObjectMap[currentUser.username];
+			User userExist = usernameUserObjectMap[currentUser.username];
 
-			if (currentUser.password != user_exist.password) {
+			if (currentUser.password != userExist.password) {
 				std::cout << "\nInvalid user name or password. Try again\n\n";
 				continue;
 			}
-			currentUser = user_exist;
+			currentUser = userExist;
 			break;
 		}
 	}
 
-	void DoSignUp() {
+	void doSignUp() {
 		while (true) {
-			std::cout << "Enter user name. (No spaces): ";
+			std::cout << "Enter username (No spaces): ";
 			std::cin >> currentUser.username;
 
 			if (usernameUserObjectMap.count(currentUser.username))
@@ -496,7 +496,7 @@ struct UserManager {
 		currentUser.userID = ++lastID;
 		usernameUserObjectMap[currentUser.username] = currentUser;
 
-		UpdateDatabase(currentUser);
+		updateDatabase(currentUser);
 	}
 
 	void listUsernameIDs() {
