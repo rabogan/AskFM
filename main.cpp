@@ -1,73 +1,67 @@
-#include <vector>
-#include <queue>
-#include <set>
 #include <map>
+#include <vector>
 #include <fstream>
 #include <sstream>
 #include <iostream>
 #include <assert.h>
 
-//New additions
-#include "AskMeSystem.h"
-#include "UtilityFunction.h"
+//Major update: the reliance on using namespace std; has been completed removed from the system!
 
-using namespace std;  //I WILL COMPLETELY GET RID OF THIS!
 /////////////////////////////// UTILITY FUNCTIONS ///////////////////////////////
-vector<string> ReadFileLines(string path) {
-	vector<string> lines;
+std::vector<std::string>readFileLines(std::string path) {
+	std::vector<std::string>lines;
+	std::fstream fileHandler(path.c_str());
 
-	fstream file_handler(path.c_str());
-
-	if (file_handler.fail()) {
-		cout << "\n\nERROR: Can't open the file\n\n";
+	if (fileHandler.fail()) {
+		std::cout << "\n\nERROR: Can't open the file\n\n";
 		return lines;
 	}
-	string line;
+	std::string line;
 
-	while (getline(file_handler, line)) {
+	while (std::getline(fileHandler, line)) {
 		if (line.size() == 0)
 			continue;
 		lines.push_back(line);
 	}
 
-	file_handler.close();
+	fileHandler.close();
 	return lines;
 }
 
-void WriteFileLines(string path, vector<string> lines, bool append = true) {
-	auto status = ios::in | ios::out | ios::app;
+void writeFileLines(std::string path, std::vector<std::string>lines, bool append = true) {
+	auto status = std::ios::in | std::ios::out | std::ios::app;
 
 	if (!append)
-		status = ios::in | ios::out | ios::trunc;	// overwrite
+		status = std::ios::in | std::ios::out | std::ios::trunc;	// overwrite
 
-	fstream file_handler(path.c_str(), status);
+	std::fstream fileHandler(path.c_str(), status);
 
-	if (file_handler.fail()) {
-		cout << "\n\nERROR: Can't open the file\n\n";
+	if (fileHandler.fail()) {
+		std::cout << "\n\nERROR: Can't open the file\n\n";
 		return;
 	}
 	for (auto line : lines)
-		file_handler << line << "\n";
+		fileHandler << line << '\n';
 
-	file_handler.close();
+	fileHandler.close();
 }
 
-vector<string> SplitString(string s, string delimiter = ",") {
-	vector<string> strs;
+std::vector<std::string> splitString(std::string s, std::string delimiter = ",") {
+	std::vector<std::string>strings;
 
 	int pos = 0;
-	string substr;
-	while ((pos = (int) s.find(delimiter)) != -1) {
-		substr = s.substr(0, pos);
-		strs.push_back(substr);
+	std::string substring;
+	while ((pos = (int)s.find(delimiter)) != -1) {
+		substring = s.substr(0, pos);
+		strings.push_back(substring);
 		s.erase(0, pos + delimiter.length());
 	}
-	strs.push_back(s);
-	return strs;
+	strings.push_back(s);
+	return strings;
 }
 
-int ToInt(string str) {
-	istringstream iss(str);
+int toInt(std::string str) {
+	std::istringstream iss(str);
 	int num;
 	iss >> num;
 
@@ -76,382 +70,377 @@ int ToInt(string str) {
 //////////////////////////////////////////////////////////////
 
 struct Question {
-	int question_id;
-	// To support thread. Each question look to a parent question
-	// -1 No parent (first question in the thread)
-	int parent_question_id;
-	int from_user_id;
-	int to_user_id;
-	int is_anonymous_questions;	// 0 or 1
-	string question_text;
-	string answer_text;			// empty = not answered
+	int questionID;
+	// To support thread. Each question looks for a parent question
+	// -1 means there's no parent question (i.e. it's the first question in the thread)
+	int parentQuestionID;
+	int fromUserID;
+	int toUserID;
+	int anonymousQuestion;	// 0 or 1
+	std::string questionText;
+	std::string answerText;			// empty = not answered
 
 	Question() {
-		question_id = parent_question_id = from_user_id = to_user_id = -1;
-		is_anonymous_questions = 1;
+		questionID = parentQuestionID = fromUserID = toUserID = -1;
+		anonymousQuestion = 1;
 	}
 
-	Question(string line) {
-		vector<string> substrs = SplitString(line);
-		assert(substrs.size() == 7);
+	Question(std::string line) {
+		std::vector<std::string> substringList = splitString(line);
+		assert(substringList.size() == 7);
 
-		question_id = ToInt(substrs[0]);
-		parent_question_id = ToInt(substrs[1]);
-		from_user_id = ToInt(substrs[2]);
-		to_user_id = ToInt(substrs[3]);
-		is_anonymous_questions = ToInt(substrs[4]);
-		question_text = substrs[5];
-		answer_text = substrs[6];
+		questionID = toInt(substringList[0]);
+		parentQuestionID = toInt(substringList[1]);
+		fromUserID = toInt(substringList[2]);
+		toUserID = toInt(substringList[3]);
+		anonymousQuestion = toInt(substringList[4]);
+		questionText = substringList[5];
+		answerText = substringList[6];
 	}
 
-	string ToString() {
-		ostringstream oss;
-		oss << question_id << "," << parent_question_id << "," << from_user_id << "," << to_user_id << "," << is_anonymous_questions << "," << question_text << "," << answer_text;
+	std::string toString() {
+		std::ostringstream oss;
+		oss << questionID << "," << parentQuestionID << "," << fromUserID << "," << toUserID << "," << 
+			anonymousQuestion << "," << questionText << "," << answerText;
 
 		return oss.str();
 	}
 
-	void PrintToQuestion() {
-		string prefix = "";
+	void printQuestionsReceived() {
+		std::string prefix = "";
 
-		if (parent_question_id != -1)
+		if (parentQuestionID != -1)
 			prefix = "\tThread: ";
 
-		cout << prefix << "Question Id (" << question_id << ")";
-		if (!is_anonymous_questions)
-			cout << " from user id(" << from_user_id << ")";
-		cout << "\t Question: " << question_text << "\n";
+		std::cout << prefix << "Question #" << questionID;
+		if (!anonymousQuestion)
+			std::cout << " from user #" << fromUserID;
+		std::cout << "\t  Question: " << questionText << '\n';
 
-		if (answer_text != "")
-			cout << prefix << "\tAnswer: " << answer_text << "\n";
-		cout << "\n";
+		if (answerText != "")
+			std::cout << prefix << "\tAnswer: " << answerText << '\n';
+		std::cout << '\n';
 	}
 
-	void PrintFromQuestion() {
-		cout << "Question Id (" << question_id << ")";
-		if (!is_anonymous_questions)
-			cout << " !AQ";
+	void printQuestionsSent() {
+		std::cout << "Question #" << questionID;
+		if (!anonymousQuestion)
+			std::cout << " (Open Question)";
 
-		cout << " to user id(" << to_user_id << ")";
-		cout << "\t Question: " << question_text;
+		std::cout << " to user #" << toUserID;
+		std::cout << "\t Question: " << questionText;
 
-		if (answer_text != "")
-			cout << "\tAnswer: " << answer_text << "\n";
+		if (answerText != "")
+			std::cout << "\tAnswer: " << answerText << '\n';
 		else
-			cout << "\tNOT Answered YET\n";
+			std::cout << "\tCurrently unanswered\n";
 	}
 
-	void PrintFeedQuestion() {
-		if (parent_question_id != -1)
-			cout << "Thread Parent Question ID (" << parent_question_id << ") ";
+	void printFeedQuestions() {
+		if (parentQuestionID != -1)
+			std::cout << "Thread Parent Question #" << parentQuestionID;
 
-		cout << "Question Id (" << question_id << ")";
-		if (!is_anonymous_questions)
-			cout << " from user id(" << from_user_id << ")";
+		std::cout << "Question #" << questionID;
+		if (!anonymousQuestion)
+			std::cout << " from user #" << fromUserID;
 
-		cout << " To user id(" << to_user_id << ")";
+		std::cout << " To user #" << toUserID;
 
-		cout << "\t Question: " << question_text << "\n";
-		if (answer_text != "")
-			cout << "\tAnswer: " << answer_text <<"\n";
+		std::cout << "\t Question: " << questionText << '\n';
+		if (answerText != "")
+			std::cout << "\tAnswer: " << answerText << '\n';
 	}
-
 };
 
 struct User {
-	int user_id;		// internal system ID
-	string user_name;
-	string password;
-	string name;
-	string email;
-	int allow_anonymous_questions;	// 0 or 1
+	int userID;		// internal system ID
+	std::string username;
+	std::string password;
+	std::string name;
+	std::string email;
+	int allowAnonymousQuestions;	// 0 or 1
 
-	vector<int> questions_id_from_me;
+	std::vector<int> questionIDsFromMe;
 	// From question id to list of questions IDS on this question (thread questions) - For this user
-	map<int, vector<int>> questionid_questionidsThead_to_map;
+	std::map<int, std::vector<int>> questionIDQuestionThreadMap;
 
 	User() {
-		user_id = allow_anonymous_questions = -1;
+		userID = allowAnonymousQuestions = -1;
 	}
 
-	User(string line) {
-		vector<string> substrs = SplitString(line);
-		assert(substrs.size() == 6);
+	User(std::string line) {
+		std::vector<std::string> substringList = splitString(line);
+		assert(substringList.size() == 6);
 
-		user_id = ToInt(substrs[0]);
-		user_name = substrs[1];
-		password = substrs[2];
-		name = substrs[3];
-		email = substrs[4];
-		allow_anonymous_questions = ToInt(substrs[5]);
+		userID = toInt(substringList[0]);
+		username = substringList[1];
+		password = substringList[2];
+		name = substringList[3];
+		email = substringList[4];
+		allowAnonymousQuestions = toInt(substringList[5]);
 	}
 
-	string ToString() {
-		ostringstream oss;
-		oss << user_id << "," << user_name << "," << password << "," << name << "," << email << "," << allow_anonymous_questions;
+	std::string toString() {
+		std::ostringstream oss;
+		oss << userID << "," << username << "," << password << "," << name << "," << email << "," << allowAnonymousQuestions;
 
 		return oss.str();
 	}
 
-	void Print() {
-		cout << "User " << user_id << ", " << user_name << " " << password << ", " << name << ", " << email << "\n";
+	void printUserDetails() {
+		std::cout << "User " << userID << ", " << username << " " << password << ", " << name << ", " << email << '\n';
 	}
 };
 
 struct QuestionManager {
 	// From question id to list of questions IDS on this question (thread questions) - All users
-	map<int, vector<int>> questionid_questionidsThead_to_map;
+	std::map<int, std::vector<int>>questionIDQuestionThreadMap;
 
 	// Map the question id to question object. Let's keep one place ONLY with the object
-	// When you study pointers, easier handling
-	map<int, Question> questionid_questionobject_map;
+	std::map<int, Question> questionIDQuestionObjectMap;
 
-	int last_id;
+	int lastID{};
 
 	QuestionManager() {
-		last_id = 0;
+		lastID = 0;
 	}
 
-	void LoadDatabase() {
-		last_id = 0;
-		questionid_questionidsThead_to_map.clear();
-		questionid_questionobject_map.clear();
+	void loadDatabase() {
+		lastID = 0;
+		questionIDQuestionThreadMap.clear();
+		questionIDQuestionObjectMap.clear();
 
-		vector<string> lines = ReadFileLines("questions.txt");
-		for (auto &line : lines) {
+		std::vector<std::string> lines = readFileLines("questions.txt");
+		for (auto& line : lines) {
 			Question question(line);
-			last_id = max(last_id, question.question_id);
+			lastID = std::max(lastID, question.questionID);
 
-			questionid_questionobject_map[question.question_id] = question;
+			questionIDQuestionObjectMap[question.questionID] = question;
 
-			if (question.parent_question_id == -1)
-				questionid_questionidsThead_to_map[question.question_id].push_back(question.question_id);
+			if (question.parentQuestionID == -1)
+				questionIDQuestionThreadMap[question.questionID].push_back(question.questionID);
 			else
-				questionid_questionidsThead_to_map[question.parent_question_id].push_back(question.question_id);
+				questionIDQuestionThreadMap[question.parentQuestionID].push_back(question.questionID);
 		}
 	}
 
-	void FillUserQuestions(User &user) {
-		user.questions_id_from_me.clear();
-		user.questionid_questionidsThead_to_map.clear();
+	void fillUserQuestions(User& user) {
+		user.questionIDsFromMe.clear();
+		user.questionIDQuestionThreadMap.clear();
 
-		for (auto &pair : questionid_questionidsThead_to_map) {	// pair<int, vector<Question>>
-			for (auto &question_id : pair.second) {		//  vector<Question>
+		for (auto& pair : questionIDQuestionThreadMap) {	// pair<int, std::vector<Question>>
+			for (auto& questionID : pair.second) {		//  std::vector<Question>
 
 				// Get the question from the map. & means same in memory, DON'T COPY
-				Question &question = questionid_questionobject_map[question_id];
+				Question& question = questionIDQuestionObjectMap[questionID];
 
-				if (question.from_user_id == user.user_id)
-					user.questions_id_from_me.push_back(question.question_id);
+				if (question.fromUserID == user.userID)
+					user.questionIDsFromMe.push_back(question.questionID);
 
-				if (question.to_user_id == user.user_id) {
-					if (question.parent_question_id == -1)
-						user.questionid_questionidsThead_to_map[question.question_id].push_back(question.question_id);
+				if (question.toUserID == user.userID) {
+					if (question.parentQuestionID == -1)
+						user.questionIDQuestionThreadMap[question.questionID].push_back(question.questionID);
 					else
-						user.questionid_questionidsThead_to_map[question.parent_question_id].push_back(question.question_id);
+						user.questionIDQuestionThreadMap[question.parentQuestionID].push_back(question.questionID);
 				}
 			}
 		}
 	}
 
-	void PrintUserToQuestions(User &user) {
-		cout << "\n";
+	void printQuestionsReceived(User& user) {
+		std::cout << '\n';
 
-		if (user.questionid_questionidsThead_to_map.size() == 0)
-			cout << "No Questions";
+		if(user.questionIDQuestionThreadMap.size()==0)
+			std::cout << "No Questions";
 
-		for (auto &pair : user.questionid_questionidsThead_to_map) {		// pair<int, vector<Question>>
-			for (auto &question_id : pair.second) {		//  vector<Question>
-
+		for(auto&pair:user.questionIDQuestionThreadMap){		// pair<int, std::vector<Question>>
+			for (auto& questionID : pair.second) {		//  std::vector<Question>
 				// Get the question from the map. & means same in memory, DON'T COPY
-				Question &question = questionid_questionobject_map[question_id];
-				question.PrintToQuestion();
+				Question& question = questionIDQuestionObjectMap[questionID];
+				question.printQuestionsReceived();
 			}
 		}
-		cout << "\n";
+		std::cout << '\n';
 	}
 
-	void PrintUserFromQuestions(User &user) {
-		cout << "\n";
-		if (user.questions_id_from_me.size() == 0)
-			cout << "No Questions";
+	void printQuestionsSent(User& user) {
+		std::cout << '\n';
+		if(user.questionIDsFromMe.size()==0)
+			std::cout << "No Questions";
 
-		for (auto &question_id : user.questions_id_from_me) {		//  vector<Question>
-
+		for (auto& questionID : user.questionIDsFromMe) {		//  std::vector<Question>
 			// Get the question from the map. & means same in memory, DON'T COPY
-			Question &question = questionid_questionobject_map[question_id];
-			question.PrintFromQuestion();
+			Question& question = questionIDQuestionObjectMap[questionID];
+			question.printQuestionsSent();
 		}
-		cout << "\n";
+		std::cout << '\n';
 	}
 
 	// Used in Answering a question for YOU.
 	// It can be any of your questions (thread or not)
-	int ReadQuestionIdAny(User &user) {
-		int question_id;
-		cout << "Enter Question id or -1 to cancel: ";
-		cin >> question_id;
+	int readQuestionID(User& user) {
+		int questionID;
+		std::cout << "Enter Question id or -1 to cancel: ";
+		std::cin >> questionID;
 
-		if (question_id == -1)
+		if (questionID == -1)
 			return -1;
 
-		if (!questionid_questionobject_map.count(question_id)) {
-			cout << "\nERROR: No question with such ID. Try again\n\n";
-			return ReadQuestionIdAny(user);
+		if(!questionIDQuestionObjectMap.count(questionID)) {
+			std::cout << "\nERROR: No question with this ID. Please try again\n\n";
+			return readQuestionID(user);
 		}
-		Question &question = questionid_questionobject_map[question_id];
+		Question& question = questionIDQuestionObjectMap[questionID];
 
-		if (question.to_user_id != user.user_id) {
-			cout << "\nERROR: Invalid question ID. Try again\n\n";
-			return ReadQuestionIdAny(user);
+		if(question.toUserID != user.userID){
+			std::cout << "\nERROR: Invalid question ID. Please try again\n\n";
+			return readQuestionID(user);
 		}
-		return question_id;
+		return questionID;
 	}
 
 	// Used to ask a question on a specific thread for whatever user
-	int ReadQuestionIdThread(User &user) {
-		int question_id;
-		cout << "For thread question: Enter Question id or -1 for new question: ";
-		cin >> question_id;
+	int readQuestionIDThread(User& user) {
+		int questionID;
+		std::cout << "For thread question: Enter Question id or -1 for new question: ";
+		std::cin >> questionID;
 
-		if (question_id == -1)
+		if (questionID == -1)
 			return -1;
 
-		if (!questionid_questionidsThead_to_map.count(question_id)) {
-			cout << "No thread question with such ID. Try again\n";
-			return ReadQuestionIdThread(user);
+		if(questionIDQuestionThreadMap.count(questionID)){
+			std::cout << "No thread question with this ID. Please try again\n";
+			return readQuestionIDThread(user);
 		}
-		return question_id;
+		return questionID;
 	}
 
-	void AnswerQuestion(User &user) {
-		int question_id = ReadQuestionIdAny(user);
+	void answerQuestion(User& user) {
+		int questionID = readQuestionID(user);
 
-		if (question_id == -1)
+		if (questionID == -1)
 			return;
 
-		Question &question = questionid_questionobject_map[question_id];
+		Question& question = questionIDQuestionObjectMap[questionID];
+		question.printQuestionsReceived();
 
-		question.PrintToQuestion();
+		if (question.answerText != "")
+			std::cout << "\nWarning: Already answered. Answer will be updated\n";
 
-		if (question.answer_text != "")
-			cout << "\nWarning: Already answered. Answer will be updated\n";
-
-		cout << "Enter answer: ";	// if user entered comma, system fails :)
-		getline(cin, question.answer_text);	// read last enter
-		getline(cin, question.answer_text);
+		std::cout << "Enter answer: ";	// if user entered comma, system fails :)
+		std::getline(std::cin, question.answerText);	// read last enter
+		std::getline(std::cin, question.answerText);
 	}
 
-	void DeleteQuestion(User &user) {
-		int question_id = ReadQuestionIdAny(user);
+	void deleteQuestion(User& user) {
+		int questionID = readQuestionID(user);
 
-		if (question_id == -1)
+		if (questionID == -1)
 			return;
 
-		vector<int> ids_to_remove;	// to remove from questionid_questionobject_map
+		std::vector<int>idsToRemove;	// to remove from questionIDQuestionObjectMap
 
-		// Let's see if thread or not. If thread, remove all of it
-		if (questionid_questionidsThead_to_map.count(question_id)) { // thread
-			ids_to_remove = questionid_questionidsThead_to_map[question_id];
-			questionid_questionidsThead_to_map.erase(question_id);
-		} else {
-			ids_to_remove.push_back(question_id);
-
+		// Let's see if it's a thread or not. If it is a thread, remove all of it
+		if(questionIDQuestionThreadMap.count(questionID)){ // thread
+			idsToRemove = questionIDQuestionThreadMap[questionID];
+			questionIDQuestionThreadMap.erase(questionID);
+		}
+		else {
+			idsToRemove.push_back(questionID);
 			// let's find in which thread to remove. Consistency is important when have multi-view
-			for (auto &pair : questionid_questionidsThead_to_map) {
-				vector<int> &vec = pair.second;
-				for (int pos = 0; pos < (int) vec.size(); ++pos) {
-					if (question_id == vec[pos]) {
+			for(auto&pair:questionIDQuestionThreadMap){
+				std::vector<int>& vec = pair.second;
+				for (int pos = 0; pos < (int)vec.size(); ++pos) {
+					if (questionID == vec[pos]) {
 						vec.erase(vec.begin() + pos);
 						break;
 					}
 				}
 			}
-
 		}
-
-		for (auto id : ids_to_remove) {
-			questionid_questionobject_map.erase(id);
+		for (auto id : idsToRemove) {
+			questionIDQuestionObjectMap.erase(id);
 		}
 	}
 
-	void AskQuestion(User &user, pair<int, int> to_user_pair) {
+	void askQuestion(User& user, std::pair<int, int>toUserPair) {
 		Question question;
 
-		if (!to_user_pair.second) {
-			cout << "Note: Anonymous questions are not allowed for this user\n";
-			question.is_anonymous_questions = 0;
-		} else {
-			cout << "Is anonymous questions?: (0 or 1): ";
-			cin >> question.is_anonymous_questions;
+		if (!toUserPair.second) {
+			std::cout << "Note: Anonymous questions are not allowed for this user\n";
+			question.anonymousQuestion = 0;
+		}
+		else {
+			std::cout << "Is anonymous questions?: (0 or 1): ";
+			std::cin >> question.anonymousQuestion;
 		}
 
-		question.parent_question_id = ReadQuestionIdThread(user);
+		question.parentQuestionID = readQuestionIDThread(user);
 
-		cout << "Enter question text: ";	// if user entered comma, system fails :)
-		getline(cin, question.question_text);
-		getline(cin, question.question_text);
+		std::cout << "Enter question text: ";	// if user entered comma, system fails :)
+		std::getline(std::cin, question.questionText);
+		std::getline(std::cin, question.questionText);
 
-		question.from_user_id = user.user_id;
-		question.to_user_id = to_user_pair.first;
+		question.fromUserID = user.userID;
+		question.toUserID = toUserPair.first;
 
 		// What happens in 2 parallel sessions who asked question?
 		// They are given same id. This is wrong handling :)
-		question.question_id = ++last_id;
+		question.questionID = ++lastID;
 
-		questionid_questionobject_map[question.question_id] = question;
+		questionIDQuestionObjectMap[question.questionID] = question;
 
-		if (question.parent_question_id == -1)
-			questionid_questionidsThead_to_map[question.question_id].push_back(question.question_id);
+		if (question.parentQuestionID == -1)
+			questionIDQuestionThreadMap[question.questionID].push_back(question.questionID);
 		else
-			questionid_questionidsThead_to_map[question.parent_question_id].push_back(question.question_id);
+			questionIDQuestionThreadMap[question.parentQuestionID].push_back(question.questionID);
 	}
 
-	void ListFeed() {
-		for (auto &pair : questionid_questionobject_map) {
-			Question &question = pair.second;
+	void listFeed() {
+		for(auto&pair:questionIDQuestionObjectMap){
+			Question& question = pair.second;
 
-			if (question.answer_text == "")
+			if (question.answerText == "")
 				continue;
 
-			question.PrintFeedQuestion();
+			question.printFeedQuestions();
 		}
 	}
 
-	void UpdateDatabase() {
-		vector<string> lines;
+	void updateDatabase() {
+		std::vector<std::string>lines;
 
-		for (auto &pair : questionid_questionobject_map)
-			lines.push_back(pair.second.ToString());
+		for (auto& pair : questionIDQuestionObjectMap)
+			lines.push_back(pair.second.toString());
 
-		WriteFileLines("questions.txt", lines, false);
+		writeFileLines("questions.txt", lines, false);
 	}
 };
 
 struct UserManager {
-	map<string, User> userame_userobject_map;
-	User current_user;
-	int last_id;
+	std::map<std::string, User> usernameUserObjectMap;
+	User currentUser;
+	int lastID{};
 
 	UserManager() {
-		last_id = 0;
+		lastID = 0;
 	}
 
 	void LoadDatabase() {
-		last_id = 0;
-		userame_userobject_map.clear();
+		lastID = 0;
+		usernameUserObjectMap.clear();
 
-		vector<string> lines = ReadFileLines("users.txt");
-		for (auto &line : lines) {
+		std::vector<std::string>lines = readFileLines("users.txt");
+		for (auto& line : lines) {
 			User user(line);
-			userame_userobject_map[user.user_name] = user;
-			last_id = max(last_id, user.user_id);
+			usernameUserObjectMap[user.username] = user;
+			lastID = std::max(lastID, user.userID);
 		}
 	}
 
 	void AccessSystem() {
 		const int possibilities = 2;
-		int choice = optionsMenu(possibilities,{ "Login", "Sign Up" });
+		int choice = optionsMenu(possibilities, { "Login", "Sign Up" });
 		if (choice == 1)
 			DoLogin();
 		else
@@ -462,80 +451,80 @@ struct UserManager {
 		LoadDatabase();	// in case user added from other parallel run
 
 		while (true) {
-			cout << "Enter user name & password: ";
-			cin >> current_user.user_name >> current_user.password;
+			std::cout << "Enter user name & password: ";
+			std::cin >> currentUser.username >> currentUser.password;
 
-			if (!userame_userobject_map.count(current_user.user_name)) {
-				cout << "\nInvalid user name or password. Try again\n\n";
+			if (!usernameUserObjectMap.count(currentUser.username)) {
+				std::cout << "\nInvalid user name or password. Try again\n\n";
 				continue;
 			}
-			User user_exist = userame_userobject_map[current_user.user_name];
+			User user_exist = usernameUserObjectMap[currentUser.username];
 
-			if (current_user.password != user_exist.password) {
-				cout << "\nInvalid user name or password. Try again\n\n";
+			if (currentUser.password != user_exist.password) {
+				std::cout << "\nInvalid user name or password. Try again\n\n";
 				continue;
 			}
-			current_user = user_exist;
+			currentUser = user_exist;
 			break;
 		}
 	}
 
 	void DoSignUp() {
 		while (true) {
-			cout << "Enter user name. (No spaces): ";
-			cin >> current_user.user_name;
+			std::cout << "Enter user name. (No spaces): ";
+			std::cin >> currentUser.username;
 
-			if (userame_userobject_map.count(current_user.user_name))
-				cout << "Already used. Try again\n";
+			if (usernameUserObjectMap.count(currentUser.username))
+				std::cout << "Already used. Try again\n";
 			else
 				break;
 		}
-		cout << "Enter password: ";
-		cin >> current_user.password;
+		std::cout << "Enter password: ";
+		std::cin >> currentUser.password;
 
-		cout << "Enter name: ";
-		cin >> current_user.name;
+		std::cout << "Enter name: ";
+		std::cin >> currentUser.name;
 
-		cout << "Enter email: ";
-		cin >> current_user.email;
+		std::cout << "Enter email: ";
+		std::cin >> currentUser.email;
 
-		cout << "Allow anonymous questions? (0 or 1): ";
-		cin >> current_user.allow_anonymous_questions;
+		std::cout << "Allow anonymous questions? (0 or 1): ";
+		std::cin >> currentUser.allowAnonymousQuestions;
 
 		// What happens in 2 parallel sessions if they signed up?
 		// They are given same id. This is wrong handling :)
-		current_user.user_id = ++last_id;
-		userame_userobject_map[current_user.user_name] = current_user;
+		currentUser.userID = ++lastID;
+		usernameUserObjectMap[currentUser.username] = currentUser;
 
-		UpdateDatabase(current_user);
+		UpdateDatabase(currentUser);
 	}
 
-	void ListUsersNamesIds() {
-		for (auto &pair : userame_userobject_map)
-			cout << "ID: " << pair.second.user_id << "\t\tName: " << pair.second.name << "\n";
+	void listUsernameIDs() {
+		for(auto&pair:usernameUserObjectMap)
+			std::cout << "ID #" << pair.second.userID << "\t\tName: " << pair.second.name << '\n';
 	}
 
-	pair<int, int> ReadUserId() {
-		int user_id;
-		cout << "Enter User id or -1 to cancel: ";
-		cin >> user_id;
+	std::pair<int, int> readUserID() {
+		int userID;
+		std::cout << "Enter User ID, or enter -1 to cancel: ";
+		std::cin >> userID;
 
-		if (user_id == -1)
-			return make_pair(-1, -1);
+		if (userID == -1)
+			return std::make_pair(-1, -1);
 
-		for (auto &pair : userame_userobject_map) {
-			if (pair.second.user_id == user_id)
-				return make_pair(user_id, pair.second.allow_anonymous_questions);
+		for(auto&pair:usernameUserObjectMap){
+			if (pair.second.userID == userID)
+				return std::make_pair(userID, pair.second.allowAnonymousQuestions);
 		}
 
-		cout << "Invalid User ID. Try again\n";
-		return ReadUserId();
+		std::cout << "Invalid User ID. Try again\n";
+		return readUserID();
 	}
 
-	void UpdateDatabase(User &user) {
-		string line = user.ToString();
-		vector<string> lines(1, line);
-		WriteFileLines("users.txt", lines);
+	void updateDatabase(User& user) {
+		std::string line = user.toString();
+		std::vector<std::string>lines(1, line);
+		writeFileLines("users.txt", lines);
 	}
 };
 
@@ -550,7 +539,6 @@ int main() {
 
 	return 0;
 }
-
 /*
 101,-1,11,13,0,Should I learn C++ first or Java,I think C++ is a better Start
 203,101,11,13,0,Why do you think so!,Just Google. There is an answer on Quora.
@@ -564,5 +552,4 @@ int main() {
 13,mostafa,111,mostafa_saad_ibrahim,mostafa@gmail.com,1
 11,noha,222,noha_salah,nono171@gmail.com,0
 45,ali,333,ali_wael,wael@gmail.com,0
-
  */
