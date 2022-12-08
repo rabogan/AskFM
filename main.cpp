@@ -438,7 +438,7 @@ struct UserManager {
 		}
 	}
 
-	void AccessSystem() {
+	void accessSystem() {
 		const int possibilities = 2;
 		int choice = optionsMenu(possibilities, { "Login", "Sign Up" });
 		if (choice == 1)
