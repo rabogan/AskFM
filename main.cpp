@@ -4,9 +4,9 @@
 #include <sstream>
 #include <iostream>
 #include <assert.h>
-#include <stdarg.h> 
-
-//Major update: the reliance on using namespace std; has been completed removed from the system!
+#include <stdarg.h>
+#include "AskMeSystem.h"
+#include "UtilityFunction.h"
 
 std::vector<std::string>readFileLines(std::string path) {
 	std::vector<std::string>lines;
@@ -210,7 +210,7 @@ struct QuestionManager {
 		questionIDQuestionThreadMap.clear();
 		questionIDQuestionObjectMap.clear();
 
-		std::vector<std::string> lines = readFileLines("");
+		std::vector<std::string> lines = readFileLines("questions.txt");
 		for (auto& line : lines) {
 			Question question(line);
 			lastID = std::max(lastID, question.questionID);
@@ -430,7 +430,7 @@ struct UserManager {
 		lastID = 0;
 		usernameUserObjectMap.clear();
 
-		std::vector<std::string>lines = readFileLines("");
+		std::vector<std::string>lines = readFileLines("user.txt");
 		for (auto& line : lines) {
 			User user(line);
 			usernameUserObjectMap[user.username] = user;
@@ -527,6 +527,63 @@ struct UserManager {
 		writeFileLines("users.txt", lines);
 	}
 };
+
+class AskMeSystem {
+private:
+	UserManager userManager;
+	QuestionManager questionManager;
+
+public:
+	void loadDatabase(bool fillUserQuestions) {
+		userManager.loadDatabase();
+		questionManager.loadDatabase();
+		if (fillUserQuestions)  // first time, waiting for login
+			questionManager.fillUserQuestions(userManager.currentUser);
+	}
+	void run() {
+		loadDatabase(true);
+		userManager.accessSystem();
+		questionManager.fillUserQuestions(userManager.currentUser);
+		//A clear exit condition has been set up for the loop
+		bool exit = false;
+		while (!exit) {
+			//This is used to show the menu options and read user input.  The OptionsMenu will be a UtilityFunction, hence the inclusion of UtilityFunction.h
+			const int possibilities = 8;
+			int choice = optionsMenu(possibilities, "Print Questions To User", "Print Questions From User",
+				"Answer Question", "Delete Question", "Ask Question", "Print System Users", "List Feed", "Log Out");
+			loadDatabase(true);
+			if (choice == 1)
+				questionManager.printQuestionsReceived(userManager.currentUser);
+			else if (choice == 2)
+				questionManager.printQuestionsSent(userManager.currentUser);
+			else if (choice == 3) {
+				questionManager.answerQuestion(userManager.currentUser);
+				questionManager.updateDatabase();
+			}
+			else if (choice == 4) {
+				questionManager.deleteQuestion(userManager.currentUser);
+				// Let's build it again (just easier, but slow)
+				questionManager.fillUserQuestions(userManager.currentUser);
+				questionManager.updateDatabase();
+			}
+			else if (choice == 5) {
+				std::pair<int, int>toUserPair = userManager.readUserID();
+				if (toUserPair.first != -1) {
+					questionManager.askQuestion(userManager.currentUser, toUserPair);
+					questionManager.updateDatabase();
+				}
+			}
+			else if (choice == 6)
+				userManager.listUsernameIDs();
+			else if (choice == 7)
+				questionManager.listFeed();
+			//If the user chooses the eighth option, set the exit condition to true
+			else
+				exit = true;
+		}
+	}
+};
+
 
 /*
 This part of the main.cpp function will end up being pretty all that is left
