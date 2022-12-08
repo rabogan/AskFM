@@ -32,7 +32,7 @@ void AskMeSystem::run() {
 		questionManager.fillUserQuestions(userManager.currentUser);
 		questionManager.updateDatabase();
 	} else if (choice == 5) {
-		pair<int, int>toUserPair = userManager.readUserID();
+		std::pair<int, int>toUserPair = userManager.readUserID();
 		if (toUserPair.first != -1) {
 			questionManager.askQuestion(userManager.currentUser, toUserPair);
 			questionManager.updateDatabase();
